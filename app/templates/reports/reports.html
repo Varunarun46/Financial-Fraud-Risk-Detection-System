@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Reports — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item active"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Report Center</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;margin-bottom:2rem;">
+            <div class="card"><h3>🚨 Fraud Detection Report</h3><p style="color:var(--text3);font-size:0.82rem;margin-bottom:1rem;">Comprehensive fraud analysis with transaction details.</p><div style="display:flex;gap:0.5rem;"><button class="btn btn-primary btn-sm" onclick="generateReport('fraud')">View</button><a href="/api/reports/export/csv" class="btn btn-secondary btn-sm">Export CSV</a></div></div>
+            <div class="card"><h3>🎯 Model Performance Report</h3><p style="color:var(--text3);font-size:0.82rem;margin-bottom:1rem;">Compare all trained models with metrics.</p><button class="btn btn-primary btn-sm" onclick="generateReport('model-performance')">View</button></div>
+            <div class="card"><h3>⚠️ Risk Analysis Report</h3><p style="color:var(--text3);font-size:0.82rem;margin-bottom:1rem;">Risk distribution across all predictions.</p><button class="btn btn-primary btn-sm" onclick="generateReport('risk')">View</button></div>
+            <div class="card"><h3>🔔 Alert Summary Report</h3><p style="color:var(--text3);font-size:0.82rem;margin-bottom:1rem;">Alert status and severity distribution.</p><button class="btn btn-primary btn-sm" onclick="generateReport('alerts')">View</button></div>
+        </div>
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;"><h3>📄 Report Output</h3><span id="report-timestamp" style="color:var(--text3);font-size:0.75rem;"></span></div>
+            <div id="report-output"><div style="text-align:center;padding:3rem;color:var(--text3);"><div style="font-size:2.5rem;margin-bottom:0.75rem;">📊</div>Select a report above to generate</div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function generateReport(type) {
+        const output = document.getElementById('report-output');
+        output.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text3);">Generating...</div>';
+        try {
+            const resp = await fetch(`/api/reports/${type}`);
+            const data = await resp.json();
+            document.getElementById('report-timestamp').textContent = 'Generated: ' + new Date().toLocaleString();
+            if (type === 'fraud') {
+                output.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1rem;margin-bottom:1.5rem;">
+                    <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--blue);">${data.summary.total_transactions.toLocaleString()}</div><div style="color:var(--text3);font-size:0.7rem;">Total</div></div>
+                    <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--red);">${data.summary.fraud_transactions.toLocaleString()}</div><div style="color:var(--text3);font-size:0.7rem;">Fraud</div></div>
+                    <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--amber);">${data.summary.fraud_rate}%</div><div style="color:var(--text3);font-size:0.7rem;">Rate</div></div>
+                    <div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;color:var(--green);">₹${Number(data.summary.total_amount).toLocaleString()}</div><div style="color:var(--text3);font-size:0.7rem;">Value</div></div>
+                </div><table><thead><tr><th>ID</th><th>Type</th><th>Amount</th><th>Date</th></tr></thead><tbody>${data.fraud_transactions.slice(0,15).map(t=>`<tr><td style="font-family:monospace;font-size:0.75rem;">${t.transaction_id}</td><td>${t.transaction_type}</td><td>₹${Number(t.amount).toLocaleString()}</td><td style="color:var(--text3);">${t.transaction_timestamp?new Date(t.transaction_timestamp).toLocaleDateString():'—'}</td></tr>`).join('')}</tbody></table>`;
+            } else if (type === 'model-performance') {
+                output.innerHTML = `<table><thead><tr><th>Model</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th><th>PR-AUC</th></tr></thead><tbody>${data.models.map(m=>`<tr><td>${m.model_name}</td><td>${((m.accuracy||0)*100).toFixed(1)}%</td><td>${((m.precision||0)*100).toFixed(1)}%</td><td>${((m.recall||0)*100).toFixed(1)}%</td><td>${((m.f1_score||0)*100).toFixed(1)}%</td><td>${((m.roc_auc||0)*100).toFixed(1)}%</td><td>${((m.pr_auc||0)*100).toFixed(1)}%</td></tr>`).join('')}</tbody></table>`;
+            } else if (type === 'risk') {
+                output.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1rem;">${Object.entries(data.risk_distribution).map(([l,c])=>`<div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;">${c}</div><div style="color:var(--text3);font-size:0.7rem;">${l}</div></div>`).join('')}</div><p style="color:var(--text3);margin-top:1rem;font-size:0.82rem;">Total predictions: ${data.total_predictions}</p>`;
+            } else if (type === 'alerts') {
+                output.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:1rem;">${Object.entries(data.status_distribution).map(([s,c])=>`<div style="text-align:center;"><div style="font-size:1.5rem;font-weight:800;">${c}</div><div style="color:var(--text3);font-size:0.7rem;">${s}</div></div>`).join('')}</div><p style="color:var(--text3);margin-top:1rem;font-size:0.82rem;">Total alerts: ${data.total_alerts}</p>`;
+            }
+        } catch(err) { output.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red);">Failed to generate report</div>'; }
+    }
+</script>
+{% endblock %}

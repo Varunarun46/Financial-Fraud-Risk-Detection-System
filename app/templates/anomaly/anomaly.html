@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Anomaly Detection — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item active"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        {% if user and user.is_admin() %}
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+        {% endif %}
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Anomaly Detection</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div style="margin-bottom:2rem;">
+            <h1 style="font-size:1.5rem;font-weight:700;">🔮 Anomaly Detection</h1>
+            <p style="color:var(--text3);margin-top:0.25rem;">Isolation Forest — Identifying unusual transaction patterns</p>
+        </div>
+
+        <!-- Stats -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div class="glass-card">
+                <div style="color:var(--text3);font-size:0.65rem;text-transform:uppercase;font-weight:600;">Total Analyzed</div>
+                <div style="font-size:1.75rem;font-weight:800;color:var(--blue);" id="anom-total">—</div>
+            </div>
+            <div class="glass-card">
+                <div style="color:var(--text3);font-size:0.65rem;text-transform:uppercase;font-weight:600;">Anomalies Found</div>
+                <div style="font-size:1.75rem;font-weight:800;color:var(--red);" id="anom-count">—</div>
+            </div>
+            <div class="glass-card">
+                <div style="color:var(--text3);font-size:0.65rem;text-transform:uppercase;font-weight:600;">Anomaly Rate</div>
+                <div style="font-size:1.75rem;font-weight:800;color:var(--amber);" id="anom-rate">—</div>
+            </div>
+            <div class="glass-card">
+                <div style="color:var(--text3);font-size:0.65rem;text-transform:uppercase;font-weight:600;">Avg Anomaly Score</div>
+                <div style="font-size:1.75rem;font-weight:800;color:var(--purple);" id="anom-score">—</div>
+            </div>
+        </div>
+
+        <!-- Anomaly Score Distribution -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.5rem;margin-bottom:2rem;">
+            <div class="card">
+                <h3>📊 Anomaly Score Distribution</h3>
+                <div style="position:relative;height:250px;"><canvas id="anomalyDistChart"></canvas></div>
+            </div>
+            <div class="card">
+                <h3>🔍 Normal vs Anomalous</h3>
+                <div style="position:relative;height:250px;"><canvas id="anomalyPieChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Anomalous Transactions -->
+        <div class="card">
+            <h3>⚠️ Anomalous Transactions</h3>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr><th>Transaction ID</th><th>Amount</th><th>Anomaly Score</th><th>Risk Level</th><th>Prediction</th></tr></thead>
+                <tbody id="anomaly-tbody"><tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3);">Loading...</td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function loadAnomaly() {
+        try {
+            const resp = await fetch('/api/anomalies');
+            const data = await resp.json();
+            const anomalies = data.anomalies || [];
+            const total = data.total || 0;
+            const count = anomalies.length;
+            const rate = total > 0 ? ((count / total) * 100).toFixed(1) : 0;
+            const avgScore = count > 0 ? (anomalies.reduce((s, a) => s + (a.anomaly_score || 0), 0) / count * 100).toFixed(1) : 0;
+
+            document.getElementById('anom-total').textContent = total.toLocaleString();
+            document.getElementById('anom-count').textContent = count;
+            document.getElementById('anom-rate').textContent = rate + '%';
+            document.getElementById('anom-score').textContent = avgScore + '%';
+
+            // Distribution chart
+            const buckets = { '0-0.2': 0, '0.2-0.4': 0, '0.4-0.6': 0, '0.6-0.8': 0, '0.8-1.0': 0 };
+            anomalies.forEach(a => {
+                const s = a.anomaly_score || 0;
+                if (s < 0.2) buckets['0-0.2']++;
+                else if (s < 0.4) buckets['0.2-0.4']++;
+                else if (s < 0.6) buckets['0.4-0.6']++;
+                else if (s < 0.8) buckets['0.6-0.8']++;
+                else buckets['0.8-1.0']++;
+            });
+            new Chart(document.getElementById('anomalyDistChart'), {
+                type: 'bar',
+                data: { labels: Object.keys(buckets), datasets: [{ data: Object.values(buckets), backgroundColor: ['#10B981','#00D4FF','#F59E0B','#F97316','#EF4444'], borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94A3B8' }, grid: { display: false } }, y: { ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+            });
+
+            // Pie chart
+            new Chart(document.getElementById('anomalyPieChart'), {
+                type: 'doughnut',
+                data: { labels: ['Normal', 'Anomalous'], datasets: [{ data: [total - count, count], backgroundColor: ['#10B981', '#EF4444'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8' } } } }
+            });
+
+            // Table
+            const tbody = document.getElementById('anomaly-tbody');
+            if (anomalies.length > 0) {
+                tbody.innerHTML = anomalies.slice(0, 15).map(a => `<tr>
+                    <td style="font-family:monospace;font-size:0.75rem;">${a.transaction_id}</td>
+                    <td style="font-family:monospace;">₹${Number(a.amount || 0).toLocaleString()}</td>
+                    <td>${((a.anomaly_score || 0) * 100).toFixed(1)}%</td>
+                    <td><span class="badge badge-${(a.risk_level || '').toLowerCase()}">${a.risk_level || '—'}</span></td>
+                    <td><span class="badge ${a.prediction === 'FRAUD' ? 'badge-high' : 'badge-low'}">${a.prediction || '—'}</span></td>
+                </tr>`).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3);">No anomalies detected</td></tr>';
+            }
+        } catch (err) {
+            console.error('Anomaly load error:', err);
+        }
+    }
+    loadAnomaly();
+</script>
+{% endblock %}

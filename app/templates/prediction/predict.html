@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}Fraud Detection — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item active"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Fraud Detection</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 1000px;">
+            <div class="card">
+                <h3>🔮 Transaction Input</h3>
+                <p style="color:var(--text3);font-size:0.82rem;margin-bottom:1.25rem;">Enter transaction details to predict fraud risk.</p>
+                <div class="form-group"><label class="form-label">Dataset</label><select id="dataset" class="form-input"><option value="paysim">PaySim</option><option value="credit_card">Credit Card</option></select></div>
+                <div class="form-group"><label class="form-label">Model</label><select id="model" class="form-input"><option value="random_forest">Random Forest</option><option value="logistic_regression">Logistic Regression</option><option value="decision_tree">Decision Tree</option><option value="isolation_forest">Isolation Forest</option></select></div>
+                <div class="form-group"><label class="form-label">Transaction Type</label><select id="tx-type" class="form-input"><option value="TRANSFER">TRANSFER</option><option value="CASH_OUT">CASH_OUT</option><option value="CASH_IN">CASH_IN</option><option value="PAYMENT">PAYMENT</option><option value="DEBIT">DEBIT</option></select></div>
+                <div class="form-group"><label class="form-label">Amount (₹)</label><input type="number" id="amount" class="form-input" value="50000"></div>
+                <div class="form-group"><label class="form-label">Source Balance (old)</label><input type="number" id="old-balance" class="form-input" value="100000"></div>
+                <div class="form-group"><label class="form-label">Source Balance (new)</label><input type="number" id="new-balance" class="form-input" value="50000"></div>
+                <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="runPrediction()">🔮 Predict Fraud Risk</button>
+            </div>
+            <div class="card">
+                <h3>📊 Prediction Result</h3>
+                <div id="prediction-result"><div style="text-align:center;padding:3rem;color:var(--text3);"><div style="font-size:2.5rem;margin-bottom:0.75rem;">🔮</div>Enter transaction details and click Predict</div></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function runPrediction() {
+        const resultDiv = document.getElementById('prediction-result');
+        resultDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text3);">AI ENGINE SCANNING...</div>';
+        const data = {
+            dataset: document.getElementById('dataset').value,
+            model: document.getElementById('model').value,
+            transaction: { type: document.getElementById('tx-type').value, amount: parseFloat(document.getElementById('amount').value)||0, oldbalanceOrg: parseFloat(document.getElementById('old-balance').value)||0, newbalanceOrig: parseFloat(document.getElementById('new-balance').value)||0, transaction_id: 'MANUAL-'+Date.now() },
+        };
+        try {
+            const resp = await fetch('/api/predict', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+            const result = await resp.json();
+            if (result.error) { resultDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red);">Error: '+result.error+'</div>'; return; }
+            const rc = result.risk_level==='CRITICAL'?'var(--red)':result.risk_level==='HIGH'?'var(--amber)':result.risk_level==='MEDIUM'?'var(--blue)':'var(--green)';
+            resultDiv.innerHTML = `<div style="text-align:center;margin-bottom:1.5rem;"><div style="font-size:3rem;font-weight:800;color:${rc};">${result.risk_score}</div><div style="color:var(--text3);font-size:0.75rem;">Risk Score</div><span class="badge badge-${result.risk_level.toLowerCase()}" style="font-size:0.85rem;padding:0.4rem 1rem;margin-top:0.5rem;">${result.risk_level}</span></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;"><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;">${(result.fraud_probability*100).toFixed(1)}%</div><div style="color:var(--text3);font-size:0.7rem;">Fraud Probability</div></div><div style="text-align:center;"><div style="font-size:1.5rem;font-weight:700;">${(result.anomaly_score*100).toFixed(1)}%</div><div style="color:var(--text3);font-size:0.7rem;">Anomaly Score</div></div></div>
+                <div style="text-align:center;margin-bottom:1.5rem;"><span class="badge ${result.prediction==='FRAUD'?'badge-high':'badge-low'}" style="font-size:1rem;padding:0.5rem 1.5rem;">${result.prediction}</span></div>
+                <div style="background:var(--bg);border-radius:10px;padding:1rem;"><div style="font-size:0.78rem;font-weight:600;margin-bottom:0.5rem;">Risk Factors:</div><ul style="color:var(--text2);font-size:0.78rem;padding-left:1.25rem;">${(result.risk_factors||[]).map(f=>'<li>'+f+'</li>').join('')||'<li>No specific factors</li>'}</ul></div>
+                ${result.alert_created?'<div style="margin-top:1rem;padding:0.75rem;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:8px;color:var(--red);font-size:0.78rem;">🚨 Alert created: '+result.alert_created.alert_id+'</div>':''}`;
+            if (result.risk_level==='CRITICAL'||result.risk_level==='HIGH') showToast(result.risk_level+' risk detected!','danger');
+        } catch(err) { resultDiv.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red);">Prediction failed. Train models first.</div>'; }
+    }
+</script>
+{% endblock %}

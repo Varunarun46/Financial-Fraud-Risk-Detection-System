@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Logs — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item active"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Audit Logs</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;"><h3>📝 System Audit Trail</h3><span class="badge badge-open" id="log-count">Loading...</span></div>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr><th>User</th><th>Action</th><th>Details</th><th>IP</th><th>Timestamp</th></tr></thead>
+                <tbody id="logs-tbody"><tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3);">Loading...</td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function loadLogs() {
+        const resp = await fetch('/api/audit-logs?per_page=100');
+        const data = await resp.json();
+        const logs = data.logs || [];
+        document.getElementById('log-count').textContent = data.total + ' entries';
+        if (!logs.length) { document.getElementById('logs-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:var(--text3);">No audit logs yet</td></tr>'; return; }
+        document.getElementById('logs-tbody').innerHTML = logs.map(l => `<tr>
+            <td>${l.user_id||'System'}</td><td><span class="badge badge-analyst">${l.action}</span></td>
+            <td style="color:var(--text3);font-size:0.75rem;">${l.details||'—'}</td>
+            <td style="font-family:monospace;font-size:0.75rem;">${l.ip_address||'—'}</td>
+            <td style="color:var(--text3);font-size:0.75rem;">${l.created_at?new Date(l.created_at).toLocaleString():'—'}</td>
+        </tr>`).join('');
+    }
+    loadLogs();
+</script>
+{% endblock %}

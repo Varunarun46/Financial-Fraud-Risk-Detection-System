@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+
+{% block title %}AI Models — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item active"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        {% if user and user.is_admin() %}
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+        {% endif %}
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">AI Model Center</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div style="margin-bottom:2rem;">
+            <h1 style="font-size:1.5rem;font-weight:700;">🎯 AI Model Center</h1>
+            <p style="color:var(--text3);margin-top:0.25rem;">Compare machine learning models and their performance metrics</p>
+        </div>
+
+        <!-- Model Performance Table -->
+        <div class="card" style="margin-bottom:2rem;">
+            <h3>📊 Model Performance Comparison</h3>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr><th>Model</th><th>Dataset</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1</th><th>ROC-AUC</th><th>PR-AUC</th></tr></thead>
+                <tbody id="models-tbody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text3);">Loading...</td></tr></tbody>
+            </table></div>
+        </div>
+
+        <!-- Model Charts -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.5rem;margin-bottom:2rem;">
+            <div class="card">
+                <h3>📈 F1 Score Comparison</h3>
+                <div style="position:relative;height:250px;"><canvas id="f1Chart"></canvas></div>
+            </div>
+            <div class="card">
+                <h3>🎯 ROC-AUC Comparison</h3>
+                <div style="position:relative;height:250px;"><canvas id="rocChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Train Model -->
+        {% if user and (user.is_admin() or user.is_analyst()) %}
+        <div class="card">
+            <h3>🚀 Train New Model</h3>
+            <p style="color:var(--text3);font-size:0.82rem;margin-bottom:1rem;">Select a dataset and model to train. This will take a few moments.</p>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+                <div style="min-width:200px;">
+                    <label class="form-label">Dataset</label>
+                    <select id="train-dataset" class="form-input">
+                        <option value="credit_card">Credit Card Fraud</option>
+                        <option value="paysim">PaySim</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="trainModel()">Train Model</button>
+            </div>
+            <div id="train-result" style="margin-top:1rem;"></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let f1Chart = null, rocChart = null;
+
+    async function loadModels() {
+        try {
+            const resp = await fetch('/api/models');
+            const data = await resp.json();
+            const models = data.models || [];
+
+            // Table
+            const tbody = document.getElementById('models-tbody');
+            if (models.length > 0) {
+                tbody.innerHTML = models.map(m => `<tr>
+                    <td>${m.model_name}</td><td>${m.dataset_name}</td>
+                    <td>${((m.accuracy || 0) * 100).toFixed(1)}%</td>
+                    <td>${((m.precision || 0) * 100).toFixed(1)}%</td>
+                    <td>${((m.recall || 0) * 100).toFixed(1)}%</td>
+                    <td>${((m.f1_score || 0) * 100).toFixed(1)}%</td>
+                    <td>${((m.roc_auc || 0) * 100).toFixed(1)}%</td>
+                    <td>${((m.pr_auc || 0) * 100).toFixed(1)}%</td>
+                </tr>`).join('');
+            } else {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--text3);">No models trained yet</td></tr>';
+            }
+
+            // Charts
+            const modelNames = [...new Set(models.map(m => m.model_name))];
+            const f1Data = modelNames.map(name => { const m = models.find(r => r.model_name === name); return m ? (m.f1_score || 0) : 0; });
+            const rocData = modelNames.map(name => { const m = models.find(r => r.model_name === name); return m ? (m.roc_auc || 0) : 0; });
+
+            if (f1Chart) f1Chart.destroy();
+            f1Chart = new Chart(document.getElementById('f1Chart'), {
+                type: 'bar',
+                data: { labels: modelNames, datasets: [{ data: f1Data, backgroundColor: 'rgba(0,212,255,0.7)', borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94A3B8' }, grid: { display: false } }, y: { min: 0, max: 1, ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+            });
+
+            if (rocChart) rocChart.destroy();
+            rocChart = new Chart(document.getElementById('rocChart'), {
+                type: 'bar',
+                data: { labels: modelNames, datasets: [{ data: rocData, backgroundColor: 'rgba(139,92,246,0.7)', borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#94A3B8' }, grid: { display: false } }, y: { min: 0, max: 1, ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } } } }
+            });
+        } catch (err) {
+            console.error('Models load error:', err);
+        }
+    }
+
+    async function trainModel() {
+        const dataset = document.getElementById('train-dataset').value;
+        const resultDiv = document.getElementById('train-result');
+        resultDiv.innerHTML = '<p style="color:var(--blue);">Training in progress...</p>';
+        try {
+            const resp = await fetch('/api/models/train', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ dataset })
+            });
+            const data = await resp.json();
+            if (data.error) {
+                resultDiv.innerHTML = '<p style="color:var(--red);">Error: ' + data.error + '</p>';
+            } else {
+                resultDiv.innerHTML = '<p style="color:var(--green);">✓ ' + data.message + '</p>';
+                showToast('Model training completed', 'success');
+                loadModels();
+            }
+        } catch (err) {
+            resultDiv.innerHTML = '<p style="color:var(--red);">Training failed</p>';
+        }
+    }
+
+    loadModels();
+</script>
+{% endblock %}

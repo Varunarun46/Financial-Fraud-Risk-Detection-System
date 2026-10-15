@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item active"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Transactions</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                <div style="flex: 1; min-width: 200px;">
+                    <label class="form-label">Search</label>
+                    <input type="text" id="search" class="form-input" placeholder="Transaction ID, account..." onkeyup="loadTransactions()">
+                </div>
+                <div style="min-width: 150px;">
+                    <label class="form-label">Fraud Status</label>
+                    <select id="fraud-status" class="form-input" onchange="loadTransactions()">
+                        <option value="">All</option>
+                        <option value="fraud">Fraud</option>
+                        <option value="legitimate">Legitimate</option>
+                    </select>
+                </div>
+                <button class="btn btn-secondary" onclick="loadTransactions()">Search</button>
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap;">
+                <span style="font-size: 0.75rem; color: var(--text3); align-self: center; margin-right: 0.5rem;">Risk Level:</span>
+                <button class="btn btn-sm btn-secondary active" onclick="filterByRisk('ALL', this)">All</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterByRisk('LOW', this)">Low</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterByRisk('MEDIUM', this)">Medium</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterByRisk('HIGH', this)">High</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterByRisk('CRITICAL', this)">Critical</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <h3>💳 All Transactions</h3>
+                <span class="badge badge-open" id="tx-count">Loading...</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>Transaction ID</th><th>Type</th><th>Amount</th><th>Risk</th><th>Prediction</th><th>Date</th><th>Actions</th></tr></thead>
+                    <tbody id="transactions-tbody"><tr><td colspan="7" style="text-align: center; padding: 2rem; color: var(--text3);">Loading...</td></tr></tbody>
+                </table>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                <span style="color: var(--text3); font-size: 0.8rem;" id="pagination-info"></span>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-secondary btn-sm" id="prev-btn" onclick="changePage(-1)">← Prev</button>
+                    <button class="btn btn-secondary btn-sm" id="next-btn" onclick="changePage(1)">Next →</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentPage = 1, totalPages = 1, currentRiskLevel = '';
+    async function loadTransactions(page = 1) {
+        currentPage = page;
+        const params = new URLSearchParams({ page, per_page: 15, search: document.getElementById('search').value, fraud_status: document.getElementById('fraud-status').value, risk_level: currentRiskLevel });
+        const resp = await fetch(`/api/transactions?${params}`);
+        const data = await resp.json();
+        totalPages = data.pages || 1;
+        document.getElementById('tx-count').textContent = data.total + ' total';
+        document.getElementById('pagination-info').textContent = `Page ${data.current_page} of ${data.pages}`;
+        document.getElementById('prev-btn').disabled = page <= 1;
+        document.getElementById('next-btn').disabled = page >= totalPages;
+        const tbody = document.getElementById('transactions-tbody');
+        if (!data.transactions.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text3);">No transactions found</td></tr>'; return; }
+        tbody.innerHTML = data.transactions.map(tx => `<tr>
+            <td style="font-family:monospace;font-size:0.75rem;">${tx.transaction_id}</td>
+            <td>${tx.transaction_type || '—'}</td>
+            <td style="font-family:monospace;">₹${Number(tx.amount||0).toLocaleString()}</td>
+            <td><span class="badge badge-${(tx.prediction?.risk_level||'').toLowerCase()}">${tx.prediction?.risk_level||'—'}</span></td>
+            <td><span class="badge ${(tx.prediction?.prediction||'').toLowerCase().includes('fraud')?'badge-high':'badge-low'}">${tx.prediction?.prediction||'—'}</span></td>
+            <td style="color:var(--text3);font-size:0.75rem;">${tx.transaction_timestamp?new Date(tx.transaction_timestamp).toLocaleDateString():'—'}</td>
+            <td><button class="btn btn-sm btn-secondary" onclick="viewTransaction('${tx.transaction_id}')">View</button></td>
+        </tr>`).join('');
+    }
+    function changePage(d) { const p = currentPage + d; if (p >= 1 && p <= totalPages) loadTransactions(p); }
+
+    async function viewTransaction(txId) {
+        try {
+            const resp = await fetch(`/api/transactions/${txId}`);
+            const tx = await resp.json();
+
+            const riskClass = (tx.prediction?.risk_level || '').toLowerCase();
+            const predClass = (tx.prediction?.prediction || '').toLowerCase().includes('fraud') ? 'badge-high' : 'badge-low';
+            const riskColor = (tx.prediction?.risk_level || '').toLowerCase() === 'critical' ? 'var(--red)' :
+                (tx.prediction?.risk_level || '').toLowerCase() === 'high' ? 'var(--amber)' :
+                (tx.prediction?.risk_level || '').toLowerCase() === 'medium' ? 'var(--blue)' : 'var(--green)';
+
+            const modalHtml = `
+                <div id="tx-modal" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;" onclick="if(event.target===this)closeModal()">
+                    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2rem;max-width:600px;width:90%;max-height:80vh;overflow-y:auto;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+                            <h3 style="font-size:1.1rem;font-weight:700;">Transaction Details</h3>
+                            <button onclick="closeModal()" style="background:none;border:none;color:var(--text2);font-size:1.5rem;cursor:pointer;">&times;</button>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Transaction ID</div>
+                                <div style="font-family:monospace;font-size:0.85rem;margin-top:0.25rem;">${tx.transaction_id}</div>
+                            </div>
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Type</div>
+                                <div style="font-size:0.85rem;margin-top:0.25rem;">${tx.transaction_type || '—'}</div>
+                            </div>
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Amount</div>
+                                <div style="font-family:monospace;font-size:1rem;font-weight:700;margin-top:0.25rem;">₹${Number(tx.amount||0).toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Date</div>
+                                <div style="font-size:0.85rem;margin-top:0.25rem;">${tx.transaction_timestamp?new Date(tx.transaction_timestamp).toLocaleString():'—'}</div>
+                            </div>
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Source Account</div>
+                                <div style="font-family:monospace;font-size:0.85rem;margin-top:0.25rem;">${tx.source_account||'—'}</div>
+                            </div>
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Destination Account</div>
+                                <div style="font-family:monospace;font-size:0.85rem;margin-top:0.25rem;">${tx.destination_account||'—'}</div>
+                            </div>
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Old Balance (Source)</div>
+                                <div style="font-family:monospace;font-size:0.85rem;margin-top:0.25rem;">₹${Number(tx.old_balance_source||0).toLocaleString()}</div>
+                            </div>
+                            <div>
+                                <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">New Balance (Source)</div>
+                                <div style="font-family:monospace;font-size:0.85rem;margin-top:0.25rem;">₹${Number(tx.new_balance_source||0).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+                            <h4 style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">AI Prediction</h4>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                                <div>
+                                    <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Prediction</div>
+                                    <div style="margin-top:0.25rem;"><span class="badge ${predClass}">${tx.prediction?.prediction||'—'}</span></div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Risk Level</div>
+                                    <div style="margin-top:0.25rem;"><span class="badge badge-${riskClass}">${tx.prediction?.risk_level||'—'}</span></div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Fraud Probability</div>
+                                    <div style="font-family:monospace;font-size:0.85rem;margin-top:0.25rem;">${((tx.prediction?.fraud_probability||0)*100).toFixed(1)}%</div>
+                                </div>
+                                <div>
+                                    <div style="color:var(--text3);font-size:0.7rem;text-transform:uppercase;">Risk Score</div>
+                                    <div style="font-family:monospace;font-size:0.85rem;font-weight:700;color:${riskColor};margin-top:0.25rem;">${tx.prediction?.risk_score||'—'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        } catch (err) {
+            showToast('Failed to load transaction details', 'danger');
+        }
+    }
+
+    function closeModal() {
+        const modal = document.getElementById('tx-modal');
+        if (modal) modal.remove();
+    }
+
+    function filterByRisk(level, btn) {
+        document.querySelectorAll('.btn-sm').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentRiskLevel = level === 'ALL' ? '' : level;
+        loadTransactions(1);
+    }
+
+    loadTransactions();
+</script>
+{% endblock %}

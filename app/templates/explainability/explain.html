@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+
+{% block title %}Explainable AI — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item active"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        {% if user and user.is_admin() %}
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+        {% endif %}
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Explainable AI</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div style="margin-bottom:2rem;">
+            <h1 style="font-size:1.5rem;font-weight:700;">🧠 Explainable AI</h1>
+            <p style="color:var(--text3);margin-top:0.25rem;">Understanding why AI flags transactions as fraudulent</p>
+        </div>
+
+        <!-- SHAP Explanation Input -->
+        <div class="card" style="margin-bottom:2rem;">
+            <h3>🔍 Explain a Transaction</h3>
+            <p style="color:var(--text3);font-size:0.82rem;margin-bottom:1rem;">Select a transaction to see SHAP-based explanation of the AI's decision.</p>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+                <div style="flex:1;min-width:250px;">
+                    <label class="form-label">Transaction</label>
+                    <select id="explain-tx" class="form-input">
+                        <option value="">Select a transaction...</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="explainTransaction()">Explain</button>
+            </div>
+        </div>
+
+        <!-- SHAP Results -->
+        <div id="shap-results">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:1.5rem;margin-bottom:2rem;">
+                <div class="card">
+                    <h3>📊 SHAP Feature Contributions</h3>
+                    <div style="position:relative;height:300px;"><canvas id="shapChart"></canvas></div>
+                </div>
+                <div class="card">
+                    <h3>🎯 Prediction Summary</h3>
+                    <div id="prediction-summary">
+                        <div style="text-align:center;padding:2rem;color:var(--text3);">
+                            <div style="font-size:2.5rem;margin-bottom:0.75rem;">🧠</div>
+                            Select a transaction to explain
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Global Feature Importance -->
+            <div class="card">
+                <h3>🌍 Global Feature Importance</h3>
+                <p style="color:var(--text3);font-size:0.82rem;margin-bottom:1rem;">Which features matter most across all predictions?</p>
+                <div style="position:relative;height:300px;"><canvas id="importanceChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let shapChart = null, importanceChart = null;
+
+    async function loadTransactions() {
+        try {
+            const resp = await fetch('/api/transactions?per_page=50');
+            const data = await resp.json();
+            const select = document.getElementById('explain-tx');
+            select.innerHTML = '<option value="">Select a transaction...</option>' +
+                (data.transactions || []).map(t => `<option value="${t.transaction_id}">${t.transaction_id} — ₹${Number(t.amount || 0).toLocaleString()}</option>`).join('');
+        } catch (err) {
+            console.error('Failed to load transactions:', err);
+        }
+    }
+
+    async function explainTransaction() {
+        const txId = document.getElementById('explain-tx').value;
+        if (!txId) { showToast('Please select a transaction', 'warning'); return; }
+
+        try {
+            const resp = await fetch('/api/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ transaction_id: txId })
+            });
+            const data = await resp.json();
+
+            if (data.error) {
+                showToast(data.error, 'danger');
+                return;
+            }
+
+            // SHAP chart
+            const features = data.top_positive_factors || [];
+            const labels = features.map(f => f.feature);
+            const values = features.map(f => f.importance);
+
+            if (shapChart) shapChart.destroy();
+            shapChart = new Chart(document.getElementById('shapChart'), {
+                type: 'bar',
+                data: {
+                    labels: labels.length ? labels : ['No data'],
+                    datasets: [{
+                        data: values.length ? values : [0],
+                        backgroundColor: values.map((_, i) => i < 3 ? '#EF4444' : '#F59E0B'),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#94A3B8' }, grid: { display: false } } }
+                }
+            });
+
+            // Summary
+            document.getElementById('prediction-summary').innerHTML = `
+                <div style="text-align:center;margin-bottom:1rem;">
+                    <div style="font-size:2rem;font-weight:800;color:var(--blue);">${txId}</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+                    <div style="text-align:center;"><div style="font-size:1.25rem;font-weight:700;">${features.length} factors</div><div style="color:var(--text3);font-size:0.7rem;">Top Contributors</div></div>
+                    <div style="text-align:center;"><div style="font-size:1.25rem;font-weight:700;">${(data.top_negative_factors || []).length}</div><div style="color:var(--text3);font-size:0.7rem;">Protective Factors</div></div>
+                </div>
+            `;
+        } catch (err) {
+            showToast('Explanation failed', 'danger');
+        }
+    }
+
+    async function loadGlobalImportance() {
+        try {
+            const resp = await fetch('/api/models/importance?dataset=credit_card&model=random_forest');
+            const data = await resp.json();
+            const importance = data.importance || [];
+
+            if (importanceChart) importanceChart.destroy();
+            importanceChart = new Chart(document.getElementById('importanceChart'), {
+                type: 'bar',
+                data: {
+                    labels: importance.slice(0, 10).map(f => f.feature),
+                    datasets: [{
+                        data: importance.slice(0, 10).map(f => f.importance),
+                        backgroundColor: 'rgba(0,212,255,0.7)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } }, y: { ticks: { color: '#94A3B8' }, grid: { display: false } } }
+                }
+            });
+        } catch (err) {
+            console.error('Importance load error:', err);
+        }
+    }
+
+    loadTransactions();
+    loadGlobalImportance();
+</script>
+{% endblock %}

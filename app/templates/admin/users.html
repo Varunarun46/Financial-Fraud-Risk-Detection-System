@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}User Management — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item active"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">User Management</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="card">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;"><h3>👥 All Users</h3><span class="badge badge-open" id="user-count">Loading...</span></div>
+            <div style="overflow-x:auto;"><table>
+                <thead><tr><th>Name</th><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Last Login</th><th>Actions</th></tr></thead>
+                <tbody id="users-tbody"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text3);">Loading...</td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function loadUsers() {
+        const resp = await fetch('/api/users');
+        const data = await resp.json();
+        const users = data.users || [];
+        document.getElementById('user-count').textContent = users.length + ' users';
+        document.getElementById('users-tbody').innerHTML = users.map(u => `<tr>
+            <td>${u.full_name}</td><td style="font-family:monospace;">${u.username}</td><td style="color:var(--text3);">${u.email}</td>
+            <td><span class="badge badge-${u.role.toLowerCase()}">${u.role}</span></td>
+            <td><span class="badge ${u.is_active?'badge-low':'badge-high'}">${u.is_active?'Active':'Inactive'}</span></td>
+            <td style="color:var(--text3);font-size:0.75rem;">${u.last_login?new Date(u.last_login).toLocaleDateString():'Never'}</td>
+            <td><select class="form-input" style="width:auto;padding:0.25rem 0.5rem;font-size:0.75rem;" onchange="updateRole(${u.id},this.value)">
+                ${['ADMIN','ANALYST','VIEWER'].map(r=>`<option value="${r}" ${u.role===r?'selected':''}>${r}</option>`).join('')}
+            </select></td>
+        </tr>`).join('');
+    }
+    async function updateRole(id, role) {
+        try {
+            const resp = await fetch(`/api/users/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({role}) });
+            const data = await resp.json();
+            if (resp.ok) {
+                showToast(`Role updated to ${role}`,'success');
+                loadUsers();
+            } else {
+                showToast(data.error || 'Failed to update role', 'danger');
+            }
+        } catch (err) {
+            showToast('Network error', 'danger');
+        }
+    }
+    loadUsers();
+</script>
+{% endblock %}

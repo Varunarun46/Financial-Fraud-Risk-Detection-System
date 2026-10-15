@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<div class="auth-page">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">FG</div>
+            <h1 class="auth-title">FIN GUARD AI</h1>
+            <p class="auth-subtitle">Financial Intelligence Powered by Machine Learning</p>
+            <p style="color: var(--text3); font-size: 0.75rem; margin-top: 0.5rem;">Detect. Analyze. Protect.</p>
+        </div>
+
+        <form method="POST" action="{{ url_for('auth.login') }}">
+            <div class="form-group">
+                <label class="form-label">Email / Username</label>
+                <input type="text" name="username" class="form-input" placeholder="Enter email or username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" name="password" class="form-input" placeholder="Enter password" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+                SIGN IN
+            </button>
+        </form>
+
+        <div class="auth-footer">
+            Don't have an account? <a href="{{ url_for('auth.register') }}">Create Account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

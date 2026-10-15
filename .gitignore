@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Environment secrets
+.env
+
+# Flask / local database
+*.db
+instance/
+
+# Logs
+logs/*.log
+
+# Data
+data/raw/*
+data/processed/*
+data/sample/*
+
+# Models
+models/*.joblib
+models/*.pkl
+models/*.h5
+models/*.keras
+models/*.onnx
+
+# Jupyter
+.ipynb_checkpoints/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

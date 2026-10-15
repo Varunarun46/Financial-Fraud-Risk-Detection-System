@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,-scale=1.0">
+    <title>Admin Dashboard — FIN GUARD AI</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #070B14;
+            --bg2: #0D1320;
+            --card: #111827;
+            --glass: rgba(255,255,255,0.05);
+            --border: rgba(255,255,255,0.08);
+            --blue: #00D4FF;
+            --cyan: #06B6D4;
+            --green: #10B981;
+            --amber: #F59E0B;
+            --orange: #F97316;
+            --red: #EF4444;
+            --purple: #8B5CF6;
+            --text: #F1F5F9;
+            --text2: #94A3B8;
+            --text3: #64748B;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 60% 40% at 15% 10%, rgba(0,212,255,0.04), transparent),
+                radial-gradient(ellipse 50% 50% at 85% 20%, rgba(139,92,246,0.03), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .topbar {
+            background: rgba(13,19,32,0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-title { font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; gap: 0.75rem; }
+        .role-badge-admin {
+            display: inline-flex; align-items: center; gap: 0.35rem;
+            padding: 0.3rem 0.75rem; border-radius: 999px;
+            font-size: 0.75rem; font-weight: 600;
+            background: rgba(139,92,246,0.12); color: var(--purple);
+            border: 1px solid rgba(139,92,246,0.25);
+        }
+        .topbar-right { display: flex; align-items: center; gap: 1rem; }
+        .user-info { display: flex; align-items: center; gap: 0.5rem; }
+        .user-avatar {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--blue), var(--purple));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; font-weight: 700; color: white;
+        }
+        .user-name { font-size: 0.82rem; font-weight: 600; }
+        .user-role { font-size: 0.68rem; color: var(--text3); }
+        .btn-logout {
+            background: var(--glass); border: 1px solid var(--border);
+            color: var(--text2); padding: 0.4rem 0.85rem; border-radius: 8px;
+            font-size: 0.78rem; cursor: pointer; text-decoration: none;
+        }
+
+        .content { padding: 2rem; position: relative; z-index: 1; }
+
+        .admin-banner {
+            background: linear-gradient(135deg, rgba(139,92,246,0.08), rgba(0,212,255,0.04));
+            border: 1px solid rgba(139,92,246,0.15);
+            border-radius: 16px; padding: 1.25rem 1.5rem;
+            margin-bottom: 2rem;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .admin-banner h1 { font-size: 1.35rem; font-weight: 800; }
+        .admin-banner p { color: var(--text2); font-size: 0.85rem; margin-top: 0.25rem; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
+        }
+        .stat-card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.25rem 1.5rem;
+            position: relative; overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .stat-card.blue::before { background: linear-gradient(90deg, var(--blue), var(--cyan)); }
+        .stat-card.purple::before { background: linear-gradient(90deg, var(--purple), #ec4899); }
+        .stat-card.green::before { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+        .stat-card.red::before { background: linear-gradient(90deg, var(--red), var(--amber)); }
+        .stat-card.amber::before { background: linear-gradient(90deg, var(--amber), var(--green)); }
+        .stat-card .label { color: var(--text3); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; font-weight: 600; }
+        .stat-card .value { font-size: 2rem; font-weight: 800; margin-top: 0.4rem; }
+        .stat-card.blue .value { color: var(--blue); }
+        .stat-card.purple .value { color: var(--purple); }
+        .stat-card.green .value { color: var(--green); }
+        .stat-card.red .value { color: var(--red); }
+        .stat-card.amber .value { color: var(--amber); }
+        .stat-card .sub { color: var(--text3); font-size: 0.72rem; margin-top: 0.2rem; }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+        .card {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 1.5rem;
+        }
+        .card-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+        .card h3 { font-size: 0.9rem; font-weight: 600; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+        th, td { padding: 0.55rem 0.65rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { color: var(--text3); font-weight: 600; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .badge {
+            display: inline-flex; align-items: center;
+            padding: 0.15rem 0.5rem; border-radius: 999px;
+            font-size: 0.65rem; font-weight: 600;
+        }
+        .badge-admin { background: rgba(139,92,246,0.12); color: var(--purple); }
+        .badge-analyst { background: rgba(0,212,255,0.12); color: var(--blue); }
+        .badge-viewer { background: rgba(100,116,139,0.12); color: var(--text3); }
+        .badge-active { background: rgba(16,185,129,0.12); color: var(--green); }
+        .badge-inactive { background: rgba(239,68,68,0.12); color: var(--red); }
+        .badge-open { background: rgba(239,68,68,0.12); color: var(--red); }
+        .badge-resolved { background: rgba(100,116,139,0.12); color: var(--text3); }
+        .badge-critical { background: rgba(239,68,68,0.12); color: var(--red); }
+        .badge-high { background: rgba(245,158,11,0.12); color: var(--amber); }
+        .badge-medium { background: rgba(245,158,11,0.12); color: var(--amber); }
+        .badge-low { background: rgba(16,185,129,0.12); color: var(--green); }
+        .badge-investigating { background: rgba(0,212,255,0.12); color: var(--blue); }
+        .badge-reviewed { background: rgba(100,116,139,0.12); color: var(--text3); }
+        .badge-confirmed { background: rgba(239,68,68,0.12); color: var(--red); }
+        .badge-dismissed { background: rgba(100,116,139,0.12); color: var(--text3); }

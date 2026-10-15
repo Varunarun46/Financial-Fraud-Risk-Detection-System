@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Alert Center — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item active"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Alert Center</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">{{ user.role }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="glass-card" style="text-align:center;"><div style="font-size:1.75rem;font-weight:800;color:var(--red);" id="stat-open">—</div><div style="color:var(--text3);font-size:0.7rem;">Open</div></div>
+            <div class="glass-card" style="text-align:center;"><div style="font-size:1.75rem;font-weight:800;color:var(--amber);" id="stat-reviewing">—</div><div style="color:var(--text3);font-size:0.7rem;">Reviewing</div></div>
+            <div class="glass-card" style="text-align:center;"><div style="font-size:1.75rem;font-weight:800;color:var(--green);" id="stat-resolved">—</div><div style="color:var(--text3);font-size:0.7rem;">Resolved</div></div>
+            <div class="glass-card" style="text-align:center;"><div style="font-size:1.75rem;font-weight:800;color:var(--red);" id="stat-critical">—</div><div style="color:var(--text3);font-size:0.7rem;">Critical</div></div>
+        </div>
+
+        <div class="card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <button class="btn btn-sm btn-secondary active" onclick="filterAlerts('', this)">All</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterAlerts('OPEN', this)">Open</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterAlerts('REVIEWING', this)">Reviewing</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterAlerts('RESOLVED', this)">Resolved</button>
+                <button class="btn btn-sm btn-secondary" onclick="filterAlerts('DISMISSED', this)">Dismissed</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="overflow-x: auto;"><table>
+                <thead><tr><th>Alert ID</th><th>Severity</th><th>Title</th><th>Transaction</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+                <tbody id="alerts-tbody"><tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text3);">Loading...</td></tr></tbody>
+            </table></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    async function loadAlerts(status = '') {
+        const params = new URLSearchParams({ per_page: 50 });
+        if (status) params.set('status', status);
+        const resp = await fetch(`/api/alerts?${params}`);
+        const data = await resp.json();
+        const alerts = data.alerts || [];
+        document.getElementById('stat-open').textContent = alerts.filter(a => a.status === 'OPEN').length;
+        document.getElementById('stat-reviewing').textContent = alerts.filter(a => a.status === 'REVIEWING').length;
+        document.getElementById('stat-resolved').textContent = alerts.filter(a => a.status === 'RESOLVED').length;
+        document.getElementById('stat-critical').textContent = alerts.filter(a => a.severity === 'CRITICAL').length;
+        const tbody = document.getElementById('alerts-tbody');
+        if (!alerts.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text3);">No alerts found</td></tr>'; return; }
+        tbody.innerHTML = alerts.map(a => `<tr>
+            <td style="font-family:monospace;font-size:0.75rem;">${a.alert_id}</td>
+            <td><span class="badge badge-${(a.severity||'').toLowerCase()}">${a.severity}</span></td>
+            <td>${a.title}</td>
+            <td style="font-family:monospace;font-size:0.75rem;">${a.transaction_id||'—'}</td>
+            <td><span class="badge badge-${(a.status||'').toLowerCase()}">${a.status}</span></td>
+            <td style="color:var(--text3);font-size:0.75rem;">${a.created_at?new Date(a.created_at).toLocaleDateString():'—'}</td>
+            <td><select class="form-input" style="width:auto;padding:0.25rem 0.5rem;font-size:0.75rem;" onchange="updateAlert('${a.alert_id}',this.value)">
+                ${['OPEN','REVIEWING','RESOLVED','DISMISSED'].map(s=>`<option value="${s}" ${a.status===s?'selected':''}>${s}</option>`).join('')}
+            </select></td>
+        </tr>`).join('');
+    }
+    let currentAlertFilter = '';
+    function filterAlerts(s, btn) {
+        document.querySelectorAll('.btn-sm').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        currentAlertFilter = s;
+        loadAlerts(s);
+    }
+    async function updateAlert(id, status) {
+        const resp = await fetch(`/api/alerts/${id}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status}) });
+        if (resp.ok) showToast(`Alert ${id} → ${status}`, 'success'); else showToast('Failed', 'danger');
+        loadAlerts(currentAlertFilter);
+    }
+    loadAlerts();
+</script>
+{% endblock %}

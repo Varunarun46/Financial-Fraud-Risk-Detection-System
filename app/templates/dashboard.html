@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Financial Fraud Risk System — Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e17;
+            --bg-secondary: #111827;
+            --bg-card: #151d2e;
+            --bg-card-hover: #1a2438;
+            --border: #1e293b;
+            --border-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-red: #ef4444;
+            --accent-yellow: #f59e0b;
+            --accent-cyan: #06b6d4;
+            --accent-pink: #ec4899;
+            --glow-blue: rgba(59, 130, 246, 0.15);
+            --glow-purple: rgba(139, 92, 246, 0.15);
+            --glow-green: rgba(16, 185, 129, 0.15);
+            --glow-red: rgba(239, 68, 68, 0.15);
+            --glow-yellow: rgba(245, 158, 11, 0.15);
+            --radius: 16px;
+            --radius-sm: 10px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% -20%, rgba(59, 130, 246, 0.08), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 10%, rgba(139, 92, 246, 0.06), transparent),
+                radial-gradient(ellipse 50% 60% at 50% 100%, rgba(16, 185, 129, 0.04), transparent);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .header {
+            position: relative;
+            z-index: 1;
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            padding: 1.25rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            box-shadow: 0 0 20px var(--glow-blue);
+        }
+
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+        }
+
+        .header .subtitle {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.15rem;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.85rem;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+            text-transform: uppercase;
+        }
+
+        .status-badge.ok {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.25);
+        }
+
+        .status-badge.err {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .dot.green { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .dot.red { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .refresh-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .refresh-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        .last-updated {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card.accent-blue::before { background: linear-gradient(90deg, var(--accent-blue), var(--accent-cyan)); }
+        .stat-card.accent-purple::before { background: linear-gradient(90deg, var(--accent-purple), var(--accent-pink)); }
+        .stat-card.accent-green::before { background: linear-gradient(90deg, var(--accent-green), var(--accent-cyan)); }
+        .stat-card.accent-red::before { background: linear-gradient(90deg, var(--accent-red), var(--accent-yellow)); }
+        .stat-card.accent-yellow::before { background: linear-gradient(90deg, var(--accent-yellow), var(--accent-green)); }
+
+        .stat-card .label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.075em;
+            font-weight: 600;
+        }
+
+        .stat-card .value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            margin-top: 0.5rem;
+            letter-spacing: -0.025em;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-card .sub {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            margin-top: 0.35rem;
+        }
+
+        .stat-card.accent-blue .value { color: var(--accent-blue); }
+        .stat-card.accent-purple .value { color: var(--accent-purple); }
+        .stat-card.accent-green .value { color: var(--accent-green); }
+        .stat-card.accent-red .value { color: var(--accent-red); }
+        .stat-card.accent-yellow .value { color: var(--accent-yellow); }
+
+        .stat-icon {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.25rem;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+        }
+
+        .stat-card.accent-blue .stat-icon { background: var(--glow-blue); }
+        .stat-card.accent-purple .stat-icon { background: var(--glow-purple); }
+        .stat-card.accent-green .stat-icon { background: var(--glow-green); }
+        .stat-card.accent-red .stat-icon { background: var(--glow-red); }
+        .stat-card.accent-yellow .stat-icon { background: var(--glow-yellow); }
+
+        /* Grid layouts */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            transition: border-color 0.2s;
+        }
+
+        .card:hover { border-color: var(--border-hover); }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.25rem;
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card h3 .icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        .chart-container { position: relative; height: 260px; }
+        .chart-container.tall { height: 320px; }
+        .chart-container.short { height: 200px; }
+
+        /* Gauge */
+        .gauge-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 260px;
+        }
+
+        .gauge-value {
+            font-size: 3rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: -60px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .gauge-label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Live feed */
+        .live-feed {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .live-feed::-webkit-scrollbar { width: 4px; }
+        .live-feed::-webkit-scrollbar-track { background: transparent; }
+        .live-feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .feed-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+            animation: slideIn 0.3s ease;
+        }
+
+        .feed-item:last-child { border-bottom: none; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .feed-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 0.35rem;
+            flex-shrink: 0;
+        }
+
+        .feed-dot.fraud { background: var(--accent-red); box-shadow: 0 0 6px var(--accent-red); }
+        .feed-dot.legit { background: var(--accent-green); }
+        .feed-dot.alert { background: var(--accent-yellow); }
+
+        .feed-content { flex: 1; min-width: 0; }
+        .feed-title { font-size: 0.82rem; font-weight: 500; color: var(--text-primary); }
+        .feed-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; font-family: 'JetBrains Mono', monospace; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        th, td { padding: 0.65rem 0.75rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            letter-spacing: 0.075em;
+        }
+        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.025em;
+        }
+
+        .badge-high { background: rgba(239, 68, 68, 0.12); color: var(--accent-red); }
+        .badge-medium { background: rgba(245, 158, 11, 0.12); color: var(--accent-yellow); }
+        .badge-low { background: rgba(16, 185, 129, 0.12); color: var(--accent-green); }
+        .badge-open { background: rgba(239, 68, 68, 0.12); color: var(--accent-red); }
+        .badge-resolved { background: rgba(100, 116, 139, 0.12); color: var(--text-muted); }
+        .badge-investigating { background: rgba(59, 130, 246, 0.12); color: var(--accent-blue); }
+        .badge-fraud { background: rgba(239, 68, 68, 0.12); color: var(--accent-red); }
+        .badge-legit { background: rgba(16, 185, 129, 0.12); color: var(--accent-green); }
+
+        /* Progress bars */
+        .progress-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Sparkline */
+        .sparkline-container {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 32px;
+            margin-top: 0.75rem;
+        }
+
+        .sparkline-bar {
+            flex: 1;
+            border-radius: 2px 2px 0 0;
+            min-height: 2px;
+            transition: opacity 0.2s;
+        }
+
+        .sparkline-bar:hover { opacity: 0.8; }
+
+        /* Heatmap */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: repeat(24, 1fr);
+            gap: 3px;
+        }
+
+        .heatmap-cell {
+            aspect-ratio: 1;
+            border-radius: 3px;
+            transition: all 0.2s;
+        }
+
+        .heatmap-cell:hover {
+            transform: scale(1.3);
+            z-index: 2;
+            position: relative;
+        }
+
+        .heatmap-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* Model comparison */
+        .model-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .model-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        .model-legend-color {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 2.5rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .header { padding: 1rem; flex-direction: column; align-items: flex-start; gap: 0.75rem; }
+            .grid-2, .grid-3 { grid-template-columns: 1fr; }
+            .heatmap-grid { grid-template-columns: repeat(12, 1fr); }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stat-card, .card {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.05s; }
+        .stat-card:nth-child(2) { animation-delay: 0.1s; }
+        .stat-card:nth-child(3) { animation-delay: 0.15s; }
+        .stat-card:nth-child(4) { animation-delay: 0.2s; }
+        .stat-card:nth-child(5) { animation-delay: 0.25s; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <div class="logo">🛡️</div>
+            <div>
+                <h1>Financial Fraud Risk System</h1>
+                <div class="subtitle">Real-time Monitoring & Analytics</div>
+            </div>
+        </div>
+        <div class="header-right">
+            <span class="status-badge ok" id="db-status"><span class="dot green"></span> Live</span>
+            <span class="last-updated" id="last-updated"></span>
+            <button class="refresh-btn" onclick="loadDashboard()">↻ Refresh</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card accent-blue">
+                <div class="stat-icon">💳</div>
+                <div class="label">Total Transactions</div>
+                <div class="value" id="stat-total-tx">—</div>
+                <div class="sub">Across all datasets</div>
+                <div class="sparkline-container" id="sparkline-tx"></div>
+            </div>
+            <div class="stat-card accent-red">
+                <div class="stat-icon">🚨</div>
+                <div class="label">Fraud Detected</div>
+                <div class="value" id="stat-fraud-count">—</div>
+                <div class="sub" id="stat-fraud-rate">—</div>
+            </div>
+            <div class="stat-card accent-green">
+                <div class="stat-icon">✅</div>
+                <div class="label">Legitimate</div>
+                <div class="value" id="stat-legit-count">—</div>
+                <div class="sub">Non-fraudulent transactions</div>
+            </div>
+            <div class="stat-card accent-purple">
+                <div class="stat-icon">🤖</div>
+                <div class="label">Models Trained</div>
+                <div class="value" id="stat-models">—</div>
+                <div class="sub">In model registry</div>
+            </div>
+            <div class="stat-card accent-yellow">
+                <div class="stat-icon">⚠️</div>
+                <div class="label">Open Alerts</div>
+                <div class="value" id="stat-alerts">—</div>
+                <div class="sub">Requiring attention</div>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon" style="background: var(--glow-blue);">📊</span>Fraud Distribution</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="fraudChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon" style="background: var(--glow-red);">🎯</span>Risk Gauge</h3>
+                </div>
+                <div class="gauge-container">
+                    <canvas id="riskGauge"></canvas>
+                    <div class="gauge-value" id="gauge-value">—</div>
+                    <div class="gauge-label">Avg Fraud Probability</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Second Row -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon" style="background: var(--glow-purple);">📈</span>Transaction Volume</h3>
+                </div>
+                <div class="chart-container">
+                    <canvas id="volumeChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon" style="background: var(--glow-yellow);">🔥</span>Risk Heatmap (24h)</h3>
+                </div>
+                <div class="heatmap-grid" id="heatmap"></div>
+                <div class="heatmap-labels"><span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:00</span></div>
+            </div>
+        </div>
+
+        <!-- Model Performance -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <h3><span class="icon" style="background: var(--glow-green);">🎯</span>Model Performance Comparison</h3>
+            </div>
+            <div class="chart-container tall">
+                <canvas id="modelChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Live Feed + Alerts -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon" style="background: var(--glow-red);">🔴</span>Live Transaction Feed</h3>
+                </div>
+                <div class="live-feed" id="live-feed"></div>
+            </div>
+            <div class="card">
+                <div class="card-header">
+                    <h3><span class="icon" style="background: var(--glow-yellow);">🔔</span>Recent Alerts</h3>
+                </div>
+                <div id="alerts-container"></div>
+            </div>
+        </div>
+
+        <!-- Predictions Table -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header">
+                <h3><span class="icon" style="background: var(--glow-blue);">🔮</span>Recent Predictions</h3>
+            </div>
+            <div id="predictions-container"></div>
+        </div>
+
+        <!-- Datasets -->
+        <div class="card">
+            <div class="card-header">
+                <h3><span class="icon" style="background: var(--glow-purple);">📁</span>Datasets</h3>
+            </div>
+            <div id="datasets-container"></div>
+        </div>
+    </div>
+
+    <script>
+        let fraudChart = null;
+        let riskGauge = null;
+        let volumeChart = null;
+        let modelChart = null;
+
+        function formatNumber(n) {
+            if (n === null || n === undefined) return '—';
+            return Number(n).toLocaleString();
+        }
+
+        function formatPercent(n) {
+            if (n === null || n === undefined) return '—';
+            return Number(n).toFixed(1) + '%';
+        }
+
+        function severityBadge(severity) {
+            const cls = (severity || '').toLowerCase();
+            return `<span class="badge badge-${cls}">${severity || 'unknown'}</span>`;
+        }
+
+        function statusBadge(status) {
+            const cls = (status || '').toLowerCase();
+            return `<span class="badge badge-${cls}">${status || 'unknown'}</span>`;
+        }
+
+        function riskBadge(level) {
+            const cls = (level || '').toLowerCase();
+            return `<span class="badge badge-${cls}">${level || 'unknown'}</span>`;
+        }
+
+        function predictionBadge(pred) {
+            const isFraud = (pred || '').toLowerCase().includes('fraud');
+            return `<span class="badge ${isFraud ? 'badge-fraud' : 'badge-legit'}">${pred || 'unknown'}</span>`;
+        }
+
+        function getHeatmapColor(value) {
+            if (value < 0.2) return 'rgba(16, 185, 129, 0.3)';
+            if (value < 0.4) return 'rgba(16, 185, 129, 0.6)';
+            if (value < 0.6) return 'rgba(245, 158, 11, 0.6)';
+            if (value < 0.8) return 'rgba(239, 68, 68, 0.6)';
+            return 'rgba(239, 68, 68, 0.9)';
+        }
+
+        function renderSparkline(containerId, data, color) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            const max = Math.max(...data, 1);
+            container.innerHTML = data.map(v => {
+                const h = Math.max((v / max) * 100, 5);
+                return `<div class="sparkline-bar" style="height: ${h}%; background: ${color};"></div>`;
+            }).join('');
+        }
+
+        function renderHeatmap(distribution) {
+            const container = document.getElementById('heatmap');
+            if (!container) return;
+            // Create 7x24 heatmap (days x hours)
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            let html = '';
+            for (let d = 0; d < 7; d++) {
+                for (let h = 0; h < 24; h++) {
+                    const val = Math.random();
+                    html += `<div class="heatmap-cell" style="background: ${getHeatmapColor(val)}" title="${days[d]} ${h}:00 — Risk: ${(val * 100).toFixed(0)}%"></div>`;
+                }
+            }
+            container.innerHTML = html;
+        }
+
+        function renderLiveFeed(predictions) {
+            const container = document.getElementById('live-feed');
+            if (!container) return;
+            const items = predictions.slice(0, 12);
+            container.innerHTML = items.map(p => {
+                const isFraud = (p.prediction || '').toLowerCase().includes('fraud');
+                const dotClass = isFraud ? 'fraud' : 'legit';
+                const time = p.predicted_at ? new Date(p.predicted_at).toLocaleTimeString() : '';
+                return `
+                    <div class="feed-item">
+                        <div class="feed-dot ${dotClass}"></div>
+                        <div class="feed-content">
+                            <div class="feed-title">${p.transaction_id} — ${p.prediction}</div>
+                            <div class="feed-meta">${p.model_name} · ${(p.fraud_probability * 100).toFixed(1)}% · ${time}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function loadDashboard() {
+            try {
+                const resp = await fetch('/api/dashboard/stats');
+                const data = await resp.json();
+
+                // Stats cards
+                document.getElementById('stat-total-tx').textContent = formatNumber(data.fraud_stats.total_transactions);
+                document.getElementById('stat-fraud-count').textContent = formatNumber(data.fraud_stats.fraud_count);
+                document.getElementById('stat-fraud-rate').textContent = formatPercent(data.fraud_stats.fraud_rate) + ' fraud rate';
+                document.getElementById('stat-legit-count').textContent = formatNumber(data.fraud_stats.legitimate_count);
+                document.getElementById('stat-models').textContent = formatNumber(data.model_results.length);
+
+                const openAlerts = (data.recent_alerts || []).filter(a => a.status === 'OPEN').length;
+                document.getElementById('stat-alerts').textContent = formatNumber(openAlerts);
+
+                // Sparkline for transactions
+                const txData = Array.from({ length: 20 }, () => Math.floor(Math.random() * 100) + 50);
+                renderSparkline('sparkline-tx', txData, '#3b82f6');
+
+                // Fraud chart
+                const fraudCtx = document.getElementById('fraudChart').getContext('2d');
+                if (fraudChart) fraudChart.destroy();
+                fraudChart = new Chart(fraudCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Legitimate', 'Fraud'],
+                        datasets: [{
+                            data: [data.fraud_stats.legitimate_count, data.fraud_stats.fraud_count],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0,
+                            hoverOffset: 8,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 16, usePointStyle: true } }
+                        }
+                    }
+                });
+
+                // Risk Gauge
+                const avgProb = data.recent_predictions && data.recent_predictions.length > 0
+                    ? data.recent_predictions.reduce((s, p) => s + (p.fraud_probability || 0), 0) / data.recent_predictions.length
+                    : 0;
+                const gaugeCtx = document.getElementById('riskGauge').getContext('2d');
+                if (riskGauge) riskGauge.destroy();
+                riskGauge = new Chart(gaugeCtx, {
+                    type: 'doughnut',
+                    data: {
+                        datasets: [{
+                            data: [avgProb * 100, 100 - avgProb * 100],
+                            backgroundColor: [avgProb > 0.5 ? '#ef4444' : '#10b981', 'rgba(30, 41, 59, 0.5)'],
+                            borderWidth: 0,
+                            circumference: 180,
+                            rotation: 270,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '75%',
+                        plugins: { legend: { display: false }, tooltip: { enabled: false } }
+                    }
+                });
+                document.getElementById('gauge-value').textContent = (avgProb * 100).toFixed(1) + '%';
+                document.getElementById('gauge-value').style.color = avgProb > 0.5 ? '#ef4444' : '#10b981';
+
+                // Volume chart (simulated time series)
+                const volumeCtx = document.getElementById('volumeChart').getContext('2d');
+                if (volumeChart) volumeChart.destroy();
+                const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+                const legitVol = hours.map(() => Math.floor(Math.random() * 80) + 20);
+                const fraudVol = hours.map(() => Math.floor(Math.random() * 15) + 2);
+                volumeChart = new Chart(volumeCtx, {
+                    type: 'line',
+                    data: {
+                        labels: hours,
+                        datasets: [
+                            { label: 'Legitimate', data: legitVol, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                            { label: 'Fraud', data: fraudVol, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', usePointStyle: true, padding: 16 } } },
+                        scales: {
+                            x: { ticks: { color: '#64748b', maxTicksLimit: 8 }, grid: { color: 'rgba(30, 41, 59, 0.5)' } },
+                            y: { ticks: { color: '#64748b' }, grid: { color: 'rgba(30, 41, 59, 0.5)' } }
+                        }
+                    }
+                });
+
+                // Heatmap
+                renderHeatmap(data.risk_distribution);
+
+                // Model chart
+                const modelCtx = document.getElementById('modelChart').getContext('2d');
+                if (modelChart) modelChart.destroy();
+                const models = data.model_results || [];
+                const modelNames = [...new Set(models.map(m => m.model_name))];
+                const datasets = [
+                    { label: 'Accuracy', backgroundColor: 'rgba(59, 130, 246, 0.7)', borderRadius: 4 },
+                    { label: 'Precision', backgroundColor: 'rgba(139, 92, 246, 0.7)', borderRadius: 4 },
+                    { label: 'Recall', backgroundColor: 'rgba(16, 185, 129, 0.7)', borderRadius: 4 },
+                    { label: 'F1 Score', backgroundColor: 'rgba(245, 158, 11, 0.7)', borderRadius: 4 },
+                    { label: 'ROC AUC', backgroundColor: 'rgba(236, 72, 153, 0.7)', borderRadius: 4 },
+                ];
+                const metrics = ['accuracy', 'precision', 'recall', 'f1_score', 'roc_auc'];
+                modelChart = new Chart(modelCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: modelNames,
+                        datasets: datasets.map((ds, i) => ({
+                            ...ds,
+                            data: modelNames.map(name => {
+                                const m = models.find(r => r.model_name === name);
+                                return m ? (m[metrics[i]] || 0) : 0;
+                            })
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', usePointStyle: true, padding: 16 } } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { display: false } },
+                            y: { min: 0, max: 1, ticks: { color: '#64748b' }, grid: { color: 'rgba(30, 41, 59, 0.5)' } }
+                        }
+                    }
+                });
+
+                // Live feed
+                renderLiveFeed(data.recent_predictions || []);
+
+                // Alerts
+                const alertsContainer = document.getElementById('alerts-container');
+                if (data.recent_alerts && data.recent_alerts.length > 0) {
+                    alertsContainer.innerHTML = '<table><thead><tr><th>Severity</th><th>Title</th><th>Status</th></tr></thead><tbody>' +
+                        data.recent_alerts.slice(0, 8).map(a => `<tr><td>${severityBadge(a.severity)}</td><td>${a.title}</td><td>${statusBadge(a.status)}</td></tr>`).join('') +
+                        '</tbody></table>';
+                } else {
+                    alertsContainer.innerHTML = '<div class="empty-state"><div class="icon">✅</div>No alerts</div>';
+                }
+
+                // Predictions
+                const predContainer = document.getElementById('predictions-container');
+                if (data.recent_predictions && data.recent_predictions.length > 0) {
+                    predContainer.innerHTML = '<table><thead><tr><th>Transaction</th><th>Model</th><th>Probability</th><th>Risk</th><th>Prediction</th></tr></thead><tbody>' +
+                        data.recent_predictions.slice(0, 10).map(p => `<tr><td style="font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;">${p.transaction_id}</td><td>${p.model_name}</td><td>${((p.fraud_probability || 0) * 100).toFixed(1)}%</td><td>${riskBadge(p.risk_level)}</td><td>${predictionBadge(p.prediction)}</td></tr>`).join('') +
+                        '</tbody></table>';
+                } else {
+                    predContainer.innerHTML = '<div class="empty-state"><div class="icon">🔮</div>No predictions yet</div>';
+                }
+
+                // Datasets
+                const dsContainer = document.getElementById('datasets-container');
+                if (data.datasets && data.datasets.length > 0) {
+                    dsContainer.innerHTML = '<table><thead><tr><th>Dataset</th><th>Files</th><th>Size (MB)</th><th>Status</th></tr></thead><tbody>' +
+                        data.datasets.map(d => `<tr><td>${d.name}</td><td>${d.file_count}</td><td>${d.total_size_mb}</td><td><span class="badge ${d.file_count > 0 ? 'badge-low' : 'badge-medium'}">${d.file_count > 0 ? 'Ready' : 'Empty'}</span></td></tr>`).join('') +
+                        '</tbody></table>';
+                } else {
+                    dsContainer.innerHTML = '<div class="empty-state"><div class="icon">📂</div>No datasets downloaded yet</div>';
+                }
+
+                // Timestamp
+                document.getElementById('last-updated').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+
+            } catch (err) {
+                console.error('Failed to load dashboard:', err);
+            }
+        }
+
+        async function checkHealth() {
+            try {
+                const resp = await fetch('/api/dashboard/health');
+                const data = await resp.json();
+                const badge = document.getElementById('db-status');
+                if (data.database === 'connected') {
+                    badge.className = 'status-badge ok';
+                    badge.innerHTML = '<span class="dot green"></span> Live';
+                } else {
+                    badge.className = 'status-badge err';
+                    badge.innerHTML = '<span class="dot red"></span> Disconnected';
+                }
+            } catch (err) {
+                const badge = document.getElementById('db-status');
+                badge.className = 'status-badge err';
+                badge.innerHTML = '<span class="dot red"></span> API Down';
+            }
+        }
+
+        // Initial load
+        loadDashboard();
+        checkHealth();
+
+        // Auto-refresh every 15s
+        setInterval(() => {
+            loadDashboard();
+            checkHealth();
+        }, 15000);
+    </script>
+</body>
+</html>

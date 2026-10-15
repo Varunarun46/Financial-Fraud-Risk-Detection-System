@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — FIN GUARD AI{% endblock %}
+
+{% block content %}
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="sidebar-logo">FG</div>
+        <div>
+            <div class="sidebar-title">FIN GUARD AI</div>
+            <div class="sidebar-subtitle">Financial Intelligence Platform</div>
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">Main</div>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Analytics</div>
+            <a href="{{ url_for('transactions.transactions_page') }}" class="nav-item"><span class="nav-icon">💳</span> Transactions</a>
+            <a href="{{ url_for('prediction.predict_page') }}" class="nav-item"><span class="nav-icon">🔍</span> Fraud Detection</a>
+            <a href="{{ url_for('main.dashboard') }}" class="nav-item"><span class="nav-icon">⚠️</span> Risk Intelligence</a>
+            <a href="{{ url_for('anomaly.anomaly_page') }}" class="nav-item"><span class="nav-icon">🔮</span> Anomaly Detection</a>
+            <a href="{{ url_for('models.models_page') }}" class="nav-item"><span class="nav-icon">🎯</span> AI Models</a>
+            <a href="{{ url_for('explainability.explain_page') }}" class="nav-item"><span class="nav-icon">🧠</span> Explainable AI</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Investigation</div>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔔</span> Alert Center</a>
+            <a href="{{ url_for('alerts.alerts_page') }}" class="nav-item"><span class="nav-icon">🔬</span> Investigations</a>
+            <a href="{{ url_for('reports.reports_page') }}" class="nav-item"><span class="nav-icon">📋</span> Reports</a>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-title">Administration</div>
+            <a href="{{ url_for('admin.users_page') }}" class="nav-item"><span class="nav-icon">👥</span> Users</a>
+            <a href="{{ url_for('admin.audit_logs_page') }}" class="nav-item"><span class="nav-icon">📝</span> Audit Logs</a>
+            <a href="{{ url_for('admin.settings_page') }}" class="nav-item"><span class="nav-icon">⚙️</span> Settings</a>
+        </div>
+    </nav>
+    <div class="sidebar-footer">
+        <a href="{{ url_for('auth.logout') }}" class="nav-item" style="color: var(--red);"><span class="nav-icon">🚪</span> Logout</a>
+    </div>
+</aside>
+
+<div class="main-content">
+    <div class="topbar">
+        <div class="topbar-title">Dashboard</div>
+        <div class="topbar-right">
+            <div class="user-info">
+                <div class="user-avatar">{{ user.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ user.full_name }}</div>
+                    <div class="user-role">ADMIN</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="content">
+        <!-- Hero -->
+        <div style="margin-bottom: 2rem;">
+            <h1 style="font-size: 1.75rem; font-weight: 800;">GOOD MORNING, {{ user.full_name.split()[-1]|upper }}</h1>
+            <p style="color: var(--text3); margin-top: 0.25rem;">Financial Risk Intelligence</p>
+            <p style="color: var(--text3); font-size: 0.85rem; margin-top: 0.5rem;">Monitor suspicious activity, analyze transaction behavior, investigate fraud and understand AI-driven risk predictions.</p>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+                <a href="{{ url_for('transactions.transactions_page') }}" class="btn btn-primary">ANALYZE TRANSACTIONS</a>
+                <a href="{{ url_for('alerts.alerts_page') }}" class="btn btn-secondary">VIEW ALERTS</a>
+            </div>
+        </div>
+
+        <!-- System Status -->
+        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+            <span style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text2);"><span class="dot green"></span> AI ENGINE ONLINE</span>
+            <span style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text2);"><span class="dot green"></span> DATABASE CONNECTED</span>
+            <span style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text2);"><span class="dot green"></span> API ONLINE</span>
+            <span style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text2);"><span class="dot green"></span> ALERT ENGINE ACTIVE</span>
+            <span style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--text2);"><span class="dot green"></span> MODEL SERVICE ONLINE</span>
+        </div>
+
+        <!-- KPI Cards -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="glass-card">
+                <div style="color: var(--text3); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; font-weight: 600;">Total Transactions</div>
+                <div style="font-size: 2rem; font-weight: 800; margin-top: 0.4rem; color: var(--blue);" id="kpi-total">0</div>
+            </div>
+            <div class="glass-card">
+                <div style="color: var(--text3); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; font-weight: 600;">Fraud Detected</div>
+                <div style="font-size: 2rem; font-weight: 800; margin-top: 0.4rem; color: var(--red);" id="kpi-fraud">0</div>
+            </div>
+            <div class="glass-card">
+                <div style="color: var(--text3); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; font-weight: 600;">Fraud Rate</div>
+                <div style="font-size: 2rem; font-weight: 800; margin-top: 0.4rem; color: var(--green);" id="kpi-rate">0%</div>
+            </div>
+            <div class="glass-card">
+                <div style="color: var(--text3); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; font-weight: 600;">High Risk</div>
+                <div style="font-size: 2rem; font-weight: 800; margin-top: 0.4rem; color: var(--amber);" id="kpi-high">0</div>
+            </div>
+            <div class="glass-card">
+                <div style="color: var(--text3); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; font-weight: 600;">Critical Alerts</div>
+                <div style="font-size: 2rem; font-weight: 800; margin-top: 0.4rem; color: var(--red);" id="kpi-critical">0</div>
+            </div>
+            <div class="glass-card">
+                <div style="color: var(--text3); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.075em; font-weight: 600;">Transaction Value</div>
+                <div style="font-size: 2rem; font-weight: 800; margin-top: 0.4rem; color: var(--purple);" id="kpi-value">₹0</div>
+            </div>
+        </div>
+
+        <!-- Risk Orb + Threat Level -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+            <div class="card" style="text-align: center;">
+                <h3>🎯 AI RISK ORB</h3>
+                <div style="position: relative; width: 200px; height: 200px; margin: 1rem auto;">
+                    <canvas id="riskOrb" width="200" height="200"></canvas>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                        <div style="font-size: 2.5rem; font-weight: 800;" id="orb-score">0</div>
+                        <div style="font-size: 0.7rem; color: var(--text3); text-transform: uppercase;" id="orb-level">LOW</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <h3>🛡️ SYSTEM THREAT LEVEL</h3>
+                <div style="margin: 1.5rem 0;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span style="font-size: 0.8rem; color: var(--text2);">Current Threat Level</span>
+                        <span style="font-size: 0.8rem; font-weight: 700;" id="threat-level">LOW</span>
+                    </div>
+                    <div style="height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden;">
+                        <div id="threat-bar" style="height: 100%; width: 20%; background: var(--green); border-radius: 4px; transition: all 0.5s ease;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.65rem; color: var(--text3);">
+                        <span>Low</span><span>Guarded</span><span>Elevated</span><span>High</span><span>Critical</span>
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem;">
+                    <h4 style="font-size: 0.8rem; margin-bottom: 0.75rem;">Risk Distribution</h4>
+                    <div style="position: relative; height: 200px;">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem; flex-wrap: wrap;">
+                        <button class="btn btn-sm btn-secondary active" onclick="filterByRisk('ALL', this)">All</button>
+                        <button class="btn btn-sm btn-secondary" onclick="filterByRisk('LOW', this)">Low</button>
+                        <button class="btn btn-sm btn-secondary" onclick="filterByRisk('MEDIUM', this)">Medium</button>
+                        <button class="btn btn-sm btn-secondary" onclick="filterByRisk('HIGH', this)">High</button>
+                        <button class="btn btn-sm btn-secondary" onclick="filterByRisk('CRITICAL', this)">Critical</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtered Transactions by Risk Level -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <h3>📋 Transactions — <span id="risk-filter-label" style="color: var(--blue);">All</span></h3>
+                <span class="badge badge-open" id="risk-filter-count">0</span>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead><tr><th>Transaction ID</th><th>Type</th><th>Amount</th><th>Risk Level</th><th>Prediction</th><th>Fraud Probability</th></tr></thead>
+                    <tbody id="risk-filtered-tbody"><tr><td colspan="6" style="text-align: center; padding: 2rem; color: var(--text3);">Click a risk level filter above</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Fraud Activity Timeline -->
+        <div class="card" style="margin-bottom: 2rem;">
+            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <h3>📈 Fraud Activity Timeline</h3>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button class="btn btn-sm btn-secondary" onclick="loadTimeline('24h')">24H</button>
+                    <button class="btn btn-sm btn-secondary" onclick="loadTimeline('7d')">7D</button>
+                    <button class="btn btn-sm btn-secondary" onclick="loadTimeline('30d')">30D</button>
+                </div>
+            </div>
+            <div style="position: relative; height: 250px;">
+                <canvas id="timelineChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Live Alerts -->
+        <div class="card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <h3>🔔 Live Fraud Alerts</h3>
+                <a href="{{ url_for('alerts.alerts_page') }}" class="btn btn-secondary btn-sm">View All</a>
+            </div>
+            <div id="alerts-container">
+                <p style="color: var(--text3); text-align: center; padding: 1rem;">Loading...</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let timelineChart = null;
+    let riskChart = null;
+
+    function animateNumber(el, target, suffix = '', prefix = '') {
+        const duration = 1000;
+        const start = 0;
+        const startTime = performance.now();
+        function update(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(start + (target - start) * eased);
+            el.textContent = prefix + current.toLocaleString() + suffix;
+            if (progress < 1) requestAnimationFrame(update);
+        }
+        requestAnimationFrame(update);
+    }
+
+    function drawRiskOrb(score, level) {
+        const canvas = document.getElementById('riskOrb');
+        const ctx = canvas.getContext('2d');
+        const cx = 100, cy = 100, r = 80;
+        ctx.clearRect(0, 0, 200, 200);
+
+        // Background ring
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+        ctx.lineWidth = 12;
+        ctx.stroke();
+
+        // Score arc
+        const angle = (score / 100) * Math.PI * 2 - Math.PI / 2;
+        const color = score >= 80 ? '#EF4444' : score >= 60 ? '#F97316' : score >= 30 ? '#F59E0B' : '#10B981';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, -Math.PI / 2, angle);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Glow
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 5, -Math.PI / 2, angle);
+        ctx.strokeStyle = color.replace(')', ', 0.2)').replace('rgb', 'rgba');
+        ctx.lineWidth = 20;
+        ctx.stroke();
+    }
+
+    async function loadDashboard() {
+        try {
+            const resp = await fetch('/api/dashboard/stats');
+            const data = await resp.json();
+
+            // KPIs with animation
+            animateNumber(document.getElementById('kpi-total'), data.fraud_stats.total_transactions || 0);
+            animateNumber(document.getElementById('kpi-fraud'), data.fraud_stats.fraud_count || 0);
+            animateNumber(document.getElementById('kpi-rate'), Math.round((data.fraud_stats.fraud_rate || 0) * 100), '%');
+            animateNumber(document.getElementById('kpi-critical'), (data.recent_alerts || []).filter(a => a.severity === 'CRITICAL').length);
+
+            const highRisk = (data.risk_distribution || []).filter(r => r.level === 'HIGH' || r.level === 'CRITICAL').reduce((s, r) => s + r.count, 0);
+            animateNumber(document.getElementById('kpi-high'), highRisk);
+
+            // Transaction Value
+            const totalValue = data.fraud_stats.total_value || 0;
+            const valueEl = document.getElementById('kpi-value');
+            if (valueEl && totalValue > 0) {
+                const duration = 1200;
+                const startTime = performance.now();
+                function animateValue(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    const eased = 1 - Math.pow(1 - progress, 3);
+                    const current = Math.round(totalValue * eased);
+                    if (current >= 10000000) {
+                        valueEl.textContent = '₹' + (current / 10000000).toFixed(2) + ' Cr';
+                    } else if (current >= 100000) {
+                        valueEl.textContent = '₹' + (current / 100000).toFixed(2) + ' L';
+                    } else {
+                        valueEl.textContent = '₹' + current.toLocaleString();
+                    }
+                    if (progress < 1) requestAnimationFrame(animateValue);
+                }
+                requestAnimationFrame(animateValue);
+            }
+
+            // Risk Orb
+            const avgProb = data.recent_predictions && data.recent_predictions.length > 0
+                ? data.recent_predictions.reduce((s, p) => s + (p.fraud_probability || 0), 0) / data.recent_predictions.length
+                : 0;
+            const orbScore = Math.round(avgProb * 100);
+            const orbLevel = orbScore >= 80 ? 'CRITICAL' : orbScore >= 60 ? 'HIGH' : orbScore >= 30 ? 'MEDIUM' : 'LOW';
+            drawRiskOrb(orbScore, orbLevel);
+            document.getElementById('orb-score').textContent = orbScore;
+            document.getElementById('orb-level').textContent = orbLevel;
+
+            // Threat Level
+            const criticalPct = data.fraud_stats.total_transactions > 0 ? (data.fraud_stats.fraud_count / data.fraud_stats.total_transactions) * 100 : 0;
+            const threatPct = Math.min(criticalPct * 10, 100);
+            const threatLevel = threatPct >= 80 ? 'CRITICAL' : threatPct >= 60 ? 'HIGH' : threatPct >= 40 ? 'ELEVATED' : threatPct >= 20 ? 'GUARDED' : 'LOW';
+            document.getElementById('threat-level').textContent = threatLevel;
+            const threatBar = document.getElementById('threat-bar');
+            threatBar.style.width = threatPct + '%';
+            threatBar.style.background = threatPct >= 80 ? 'var(--red)' : threatPct >= 60 ? 'var(--orange)' : threatPct >= 40 ? 'var(--amber)' : threatPct >= 20 ? 'var(--blue)' : 'var(--green)';
+
+            // Risk chart
+            const riskLabels = (data.risk_distribution || []).map(r => r.level || 'Unknown');
+            const riskCounts = (data.risk_distribution || []).map(r => r.count);
+            const riskColors = riskLabels.map(l => {
+                const v = (l || '').toLowerCase();
+                if (v === 'high' || v === 'critical') return '#EF4444';
+                if (v === 'medium') return '#F59E0B';
+                if (v === 'low') return '#10B981';
+                return '#00D4FF';
+            });
+            if (typeof riskChart !== 'undefined' && riskChart) riskChart.destroy();
+            riskChart = new Chart(document.getElementById('riskChart'), {
+                type: 'doughnut',
+                data: { labels: riskLabels, datasets: [{ data: riskCounts, backgroundColor: riskColors, borderWidth: 0, hoverOffset: 8, borderColor: 'rgba(255,255,255,0.1)', borderWidth: 2 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '65%',
+                    plugins: { legend: { position: 'bottom', labels: { color: '#94A3B8', padding: 16, usePointStyle: true, pointStyle: 'circle' } } },
+                    animation: { animateRotate: true, duration: 1000 }
+                }
+            });
+
+            // Alerts
+            const alertsDiv = document.getElementById('alerts-container');
+            if (data.recent_alerts && data.recent_alerts.length > 0) {
+                let html = '<table><thead><tr><th>Severity</th><th>Title</th><th>Status</th></tr></thead><tbody>';
+                data.recent_alerts.slice(0, 5).forEach(a => {
+                    html += '<tr><td><span class="badge badge-' + (a.severity || '').toLowerCase() + '">' + a.severity + '</span></td><td>' + a.title + '</td><td><span class="badge badge-' + (a.status || '').toLowerCase() + '">' + a.status + '</span></td></tr>';
+                });
+                html += '</tbody></table>';
+                alertsDiv.innerHTML = html;
+            } else {
+                alertsDiv.innerHTML = '<p style="color: var(--text3); text-align: center; padding: 1rem;">No alerts</p>';
+            }
+        } catch (err) {
+            console.error('Dashboard error:', err);
+        }
+    }
+
+    function loadTimeline(period) {
+        const canvas = document.getElementById('timelineChart');
+        if (timelineChart) timelineChart.destroy();
+        const labels = period === '24h' ? Array.from({length: 24}, (_, i) => i + ':00') : period === '7d' ? ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'] : Array.from({length: 30}, (_, i) => (i+1) + 'd');
+        const fraudData = labels.map(() => Math.floor(Math.random() * 10) + 1);
+        const legitData = labels.map(() => Math.floor(Math.random() * 80) + 20);
+        timelineChart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Legitimate', data: legitData, borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.15)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                    { label: 'Fraud', data: fraudData, borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.15)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: '#94A3B8', usePointStyle: true, pointStyle: 'circle', padding: 16 } },
+                    tooltip: { backgroundColor: 'rgba(17,24,39,0.95)', borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1, padding: 12, titleColor: '#F1F5F9', bodyColor: '#94A3B8' }
+                },
+                scales: {
+                    x: { ticks: { color: '#64748B' }, grid: { display: false } },
+                    y: { ticks: { color: '#64748B' }, grid: { color: 'rgba(255,255,255,0.05)' } }
+                },
+                animation: { duration: 1000, easing: 'easeInOutQuart' }
+            }
+        });
+    }
+
+    function filterByRisk(level, btn) {
+        // Update active button
+        document.querySelectorAll('.btn-sm').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update label
+        document.getElementById('risk-filter-label').textContent = level.charAt(0) + level.slice(1).toLowerCase();
+
+        // Fetch filtered transactions
+        const params = new URLSearchParams({ page: 1, per_page: 50 });
+        if (level !== 'ALL') params.set('risk_level', level);
+
+        fetch('/api/transactions?' + params)
+            .then(r => r.json())
+            .then(data => {
+                const tbody = document.getElementById('risk-filtered-tbody');
+                document.getElementById('risk-filter-count').textContent = data.total + ' transactions';
+
+                if (!data.transactions.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:2rem;color:var(--text3);">No transactions found for ' + level + ' risk</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = data.transactions.map(tx => {
+                    const riskClass = (tx.prediction?.risk_level || '').toLowerCase();
+                    const predClass = (tx.prediction?.prediction || '').toLowerCase().includes('fraud') ? 'badge-high' : 'badge-low';
+                    return `<tr>
+                        <td style="font-family:monospace;font-size:0.75rem;">${tx.transaction_id}</td>
+                        <td>${tx.transaction_type || '—'}</td>
+                        <td style="font-family:monospace;">₹${Number(tx.amount || 0).toLocaleString()}</td>
+                        <td><span class="badge badge-${riskClass}">${tx.prediction?.risk_level || '—'}</span></td>
+                        <td><span class="badge ${predClass}">${tx.prediction?.prediction || '—'}</span></td>
+                        <td style="font-family:monospace;">${((tx.prediction?.fraud_probability || 0) * 100).toFixed(1)}%</td>
+                    </tr>`;
+                }).join('');
+            })
+            .catch(err => {
+                console.error('Filter error:', err);
+            });
+    }
+
+    loadDashboard();
+    loadTimeline('24h');
+    setInterval(loadDashboard, 15000);
+</script>
+{% endblock %}
